@@ -17,7 +17,7 @@ consumer can compare providers on the terms rather than on the marketing.
 
 - **[deprecation-policy-json-schema.yml](deprecation-policy-json-schema.yml)** — the JSON Schema (2020-12).
 - **[deprecation-policy-example-1.yml](deprecation-policy-example-1.yml)** — a standalone document, as written to `all/<slug>/deprecation/<slug>-deprecation-policy.yml`.
-- **[deprecation-policy-example-2.yml](deprecation-policy-example-2.yml)** — the same document inside the `DeprecationPolicy` apis.yml property envelope.
+- **[deprecation-policy-example-2.yml](deprecation-policy-example-2.yml)** — the same document inside the `DeprecationSchedule` apis.yml property envelope.
 - **[validate.py](validate.py)** — validates any document against the schema.
 
 Both examples describe **Example Weather API**, a fictional provider. The clauses are illustrative and are
