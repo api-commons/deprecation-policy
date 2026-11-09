@@ -1,0 +1,278 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://raw.githubusercontent.com/api-commons/deprecation-policy/main/deprecation-policy-json-schema.yml
+title: API Commons Deprecation Policy
+description: >-
+  The machine-readable deprecation policy of an API — how much notice the provider gives before
+  retiring something, how long old versions stay supported, where deprecations are announced,
+  whether the Deprecation and Sunset headers are sent, and what counts as a breaking change. Every
+  value is transcribed verbatim from the provider's own page.
+oneOf:
+- title: Deprecation Policy document
+  description: A standalone document, as written to all/<slug>/deprecation/.
+  type: object
+  $ref: '#/$defs/document'
+- title: DeprecationPolicy properties
+  description: One or more apis.yml property envelopes carrying the document under `data`.
+  type: array
+  minItems: 1
+  items:
+    $ref: '#/$defs/property'
+$defs:
+  verbatim:
+    type:
+    - string
+    - 'null'
+    minLength: 1
+    description: Copied word for word from the page at `url`. The harvester checks every row against
+      the fetched page text and drops any row that does not match. Never paraphrased, never synthetic.
+  period:
+    type:
+    - string
+    - 'null'
+    description: A period copied exactly as written on the page (for example "30 days" or "12
+      months"). Never normalized or computed.
+  stance:
+    type: string
+    enum:
+    - allowed
+    - prohibited
+    - conditional
+    - unstated
+    description: Whether the page permits something. `allowed`, `prohibited` and `conditional`
+      each need a verbatim `text`. `unstated` means the page says nothing about it, which is a
+      valid result and is never guessed.
+  stanceText:
+    type: object
+    additionalProperties: false
+    required:
+    - stance
+    description: A permission and the verbatim sentence it was read from.
+    properties:
+      stance:
+        $ref: '#/$defs/stance'
+      text:
+        $ref: '#/$defs/verbatim'
+    if:
+      properties:
+        stance:
+          not:
+            const: unstated
+    then:
+      required:
+      - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+  textOnly:
+    type: object
+    additionalProperties: false
+    required:
+    - text
+    description: A clause that is recorded only as the verbatim text it was read from.
+    properties:
+      text:
+        $ref: '#/$defs/verbatim'
+  periodText:
+    type: object
+    additionalProperties: false
+    required:
+    - period
+    - text
+    description: A period and the verbatim sentence that states it.
+    properties:
+      period:
+        $ref: '#/$defs/period'
+      text:
+        $ref: '#/$defs/verbatim'
+  summaryText:
+    type: object
+    additionalProperties: false
+    required:
+    - summary
+    - text
+    description: A short label for a clause plus the verbatim clause itself.
+    properties:
+      summary:
+        type: string
+        description: A short label for the clause. The label is ours; the `text` is the provider's.
+        minLength: 1
+      text:
+        type: string
+        minLength: 1
+        description: Copied word for word from the page at `url`. The harvester checks every row
+          against the fetched page text and drops any row that does not match. Never paraphrased,
+          never synthetic.
+  derivation:
+    type: object
+    additionalProperties: true
+    required:
+    - synthetic
+    - method
+    - read
+    - tool
+    description: How this document was produced. Every business-layer document is harvested from
+      the provider's own page; none is generated.
+    properties:
+      synthetic:
+        const: false
+        description: Always false. Synthetic or template-filled documents are not published (roadmap#1086).
+      method:
+        const: harvested
+        description: 'Always `harvested`: the page was fetched by code and the model only transcribed
+          rows from it.'
+      read:
+        type: string
+        description: The date the page was read (YYYY-MM-DD).
+        format: date
+      tool:
+        type: string
+        description: The harvester that produced the document, e.g. engine/business/harvest-business.py.
+      model:
+        type: string
+        description: The model id that transcribed the rows. The model never authors text; it
+          only selects it.
+  document:
+    type: object
+    additionalProperties: false
+    required:
+    - deprecation_policy
+    - provider
+    - aid
+    - url
+    - source_date
+    - x-apis-io-derivation
+    description: A Deprecation Policy document as harvested from one provider page.
+    properties:
+      deprecation_policy:
+        type: string
+        description: 'Schema version of this document. `deprecation_policy: 0.1.0` for this release.'
+        pattern: ^\d+\.\d+\.\d+$
+      provider:
+        type: string
+        description: The provider's name as it appears in its apis.yml.
+        minLength: 1
+      aid:
+        type: string
+        description: The provider's APIs.io slug (the `all/<slug>` directory and page slug).
+        pattern: ^[a-z0-9][a-z0-9-]*$
+      url:
+        type: string
+        description: The page this document was read from.
+        format: uri
+      source_date:
+        type: string
+        description: When the page was read (YYYY-MM-DD).
+        format: date
+      x-apis-io-derivation:
+        $ref: '#/$defs/derivation'
+      minimum_notice:
+        description: The minimum notice before something deprecated is removed.
+        anyOf:
+        - $ref: '#/$defs/periodText'
+        - type: 'null'
+      support_window:
+        description: How long a deprecated version stays supported.
+        anyOf:
+        - $ref: '#/$defs/periodText'
+        - type: 'null'
+      announcement_channels:
+        type: array
+        description: Where deprecations are announced.
+        items:
+          type: object
+          additionalProperties: false
+          required:
+          - channel
+          - text
+          properties:
+            channel:
+              type: string
+              enum:
+              - email
+              - changelog
+              - blog
+              - dashboard
+              - header
+              - status
+              - other
+              description: Where deprecations are announced.
+            text:
+              type: string
+              minLength: 1
+              description: Copied word for word from the page at `url`. The harvester checks every
+                row against the fetched page text and drops any row that does not match. Never
+                paraphrased, never synthetic.
+      headers:
+        type:
+        - object
+        - 'null'
+        additionalProperties: false
+        description: Whether the provider says it sends the Deprecation (RFC 9745) and Sunset
+          (RFC 8594) headers.
+        properties:
+          deprecation:
+            type:
+            - boolean
+            - 'null'
+            description: True when the page says the Deprecation header is sent. `null` when the
+              page does not say.
+          sunset:
+            type:
+            - boolean
+            - 'null'
+            description: True when the page says the Sunset header is sent. `null` when the page
+              does not say.
+          text:
+            $ref: '#/$defs/verbatim'
+      versioning_scheme:
+        type:
+        - object
+        - 'null'
+        additionalProperties: false
+        description: The versioning scheme the page describes.
+        properties:
+          value:
+            type:
+            - string
+            - 'null'
+            description: The scheme as the page names it (e.g. "date-based", "major versions in
+              the path").
+          text:
+            $ref: '#/$defs/verbatim'
+      breaking_change_definition:
+        description: What the provider counts as a breaking change, verbatim.
+        anyOf:
+        - $ref: '#/$defs/textOnly'
+        - type: 'null'
+    patternProperties:
+      ^x-:
+        description: Extensions.
+  property:
+    type: object
+    additionalProperties: false
+    required:
+    - type
+    - url
+    - data
+    description: The DeprecationPolicy property as it appears inside an apis.yml / apis.json index.
+    properties:
+      name:
+        type: string
+        description: The name of the property as it appears in the index.
+      type:
+        const: DeprecationPolicy
+        description: The API Commons property type. Always DeprecationPolicy.
+      description:
+        type: string
+        description: What this property covers.
+      url:
+        type: string
+        description: The artifact path (or provider page) this property points at.
+        format: uri-reference
+      source_date:
+        type: string
+        description: The date the data was last verified against the provider page.
+        format: date
+      data:
+        $ref: '#/$defs/document'
